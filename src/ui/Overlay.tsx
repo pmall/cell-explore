@@ -10,6 +10,9 @@ type Tab = 'tours' | 'index'
 
 export function Overlay() {
   const [tab, setTab] = useState<Tab>('tours')
+  // Phone layout only: the rail is a sheet the masthead button opens. On wider
+  // screens it is always on show and this flag is ignored.
+  const [menuOpen, setMenuOpen] = useState(false)
   const selected = useStore((s) => s.selected)
   const tourId = useStore((s) => s.tourId)
   const intro = useStore((s) => s.intro)
@@ -26,7 +29,8 @@ export function Overlay() {
       if (e.target instanceof HTMLInputElement) return
       const s = useStore.getState()
       if (e.key === 'Escape') {
-        if (s.selected) select(null)
+        if (menuOpen) setMenuOpen(false)
+        else if (s.selected) select(null)
         else if (s.tourId) exitTour()
         else if (s.intro) s.dismissIntro()
       } else if (s.tourId && (e.key === 'ArrowRight' || e.key === 'ArrowDown')) {
@@ -42,17 +46,27 @@ export function Overlay() {
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [select, exitTour, nextStep, prevStep, setPlaying])
+  }, [select, exitTour, nextStep, prevStep, setPlaying, menuOpen])
 
   return (
     <>
       <div className="overlay">
         <header className="panel masthead">
-          <h1>Inside a Cell</h1>
-          <p>An interactive tour of a living animal cell</p>
+          <div>
+            <h1>Inside a Cell</h1>
+            <p>An interactive tour of a living animal cell</p>
+          </div>
+          <button
+            className="menu-toggle"
+            aria-expanded={menuOpen}
+            aria-controls="rail"
+            onClick={() => setMenuOpen((v) => !v)}
+          >
+            {menuOpen ? 'Close' : 'Tours & index'}
+          </button>
         </header>
 
-        <nav className="panel rail">
+        <nav className="panel rail" id="rail" data-open={menuOpen}>
           <div className="tabs" role="tablist">
             <button
               className="tab"
@@ -79,7 +93,10 @@ export function Overlay() {
                   key={tour.id}
                   className="tour-card"
                   data-active={tourId === tour.id}
-                  onClick={() => startTour(tour.id)}
+                  onClick={() => {
+                    startTour(tour.id)
+                    setMenuOpen(false)
+                  }}
                 >
                   <span className="name">
                     <span className="swatch" style={{ background: tour.color, color: tour.color }} />
@@ -95,7 +112,10 @@ export function Overlay() {
                   key={structure.id}
                   className="index-item"
                   data-active={selected === structure.id}
-                  onClick={() => select(structure.id)}
+                  onClick={() => {
+                    select(structure.id)
+                    setMenuOpen(false)
+                  }}
                 >
                   <span
                     className="swatch"

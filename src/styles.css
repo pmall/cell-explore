@@ -59,7 +59,27 @@ canvas { display: block; touch-action: none; }
   grid-column: 1; grid-row: 1;
   padding: 14px 18px;
   align-self: start;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
 }
+
+/* Only exists on phones, where the rail is hidden until it is asked for. */
+.menu-toggle {
+  display: none;
+  appearance: none;
+  flex: none;
+  background: rgba(255,255,255,0.07);
+  border: 1px solid var(--edge);
+  border-radius: 10px;
+  color: var(--ink);
+  font: inherit;
+  font-size: 12.5px;
+  padding: 9px 13px;
+  cursor: pointer;
+}
+.menu-toggle[aria-expanded='true'] { background: rgba(255,255,255,0.14); }
 .masthead h1 {
   margin: 0;
   font-size: 17px;
@@ -379,8 +399,18 @@ canvas { display: block; touch-action: none; }
   .hint { display: none; }
 }
 @media (max-width: 620px) {
-  .rail { display: none; }
   .masthead p { display: none; }
+  .menu-toggle { display: block; }
+  /* The rail is a sheet here: out of the way until the masthead button asks
+     for it, and it takes the row back from the info panel while it is open. */
+  .rail { display: none; }
+  .rail[data-open='true'] {
+    display: flex;
+    grid-row: 2;
+    max-height: min(60vh, 420px);
+    align-self: start;
+    z-index: 2;
+  }
 }
 
 ::-webkit-scrollbar { width: 8px; }
