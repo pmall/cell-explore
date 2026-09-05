@@ -1,9 +1,10 @@
 import * as THREE from 'three'
 import { palette } from '../theme/palette'
 import {
-  CELL_RADIUS, CENTROSOME, ER_EXIT_SITE, EXPORT_PORE_DIR, FEATURED_MITOCHONDRION, GOLGI,
-  LYSOSOMES, MITOCHONDRIA, MITO_SYNTHASE_WORLD, NUCLEOLUS, NUCLEUS, PEROXISOMES,
-  SIGNAL_RECEPTOR_DIR,
+  CELL_RADIUS, CENTROSOME, ER_EXIT_SITE, EXPORT_PORE_DIR, FEATURED_MITOCHONDRION,
+  GOLGI, LYSOSOMES, MITOCHONDRIA, MITO_SYNTHASE_WORLD, NUCLEOLUS,
+  NUCLEUS, PEROXISOMES, RIBOSOME_FOCUS, ROUGH_ER_FOCUS, SIGNAL_RECEPTOR_DIR,
+  VESICLE_CLUSTER,
 } from './layout'
 
 const FEATURED_MITO = MITOCHONDRIA[FEATURED_MITOCHONDRION].position
@@ -171,7 +172,7 @@ export const STRUCTURES: Structure[] = [
     ],
     color: palette.roughER.base,
     size: 'sheets ~50 nm apart',
-    focus: { target: NUCLEUS.center.clone().add(v(2.6, -0.6, 2.4)), distance: 7.5 },
+    focus: { target: ROUGH_ER_FOCUS.clone(), distance: 9 },
   },
   {
     id: 'smoothER',
@@ -202,7 +203,7 @@ export const STRUCTURES: Structure[] = [
     ],
     color: palette.ribosome,
     size: '~25 nm',
-    focus: { target: NUCLEUS.center.clone().add(v(3.0, -0.9, 2.7)), distance: 3 },
+    focus: { target: RIBOSOME_FOCUS.clone(), distance: 2.2 },
   },
   {
     id: 'golgi',
@@ -232,7 +233,7 @@ export const STRUCTURES: Structure[] = [
     ],
     color: palette.vesicle.base,
     size: '50-100 nm',
-    focus: { target: ER_EXIT_SITE.clone(), distance: 4 },
+    focus: { target: VESICLE_CLUSTER.centre.clone(), distance: 3.4 },
   },
   {
     id: 'mitochondrion',

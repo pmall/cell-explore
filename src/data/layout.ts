@@ -38,6 +38,105 @@ export const GOLGI = {
   radius: 1.85,
 }
 
+/**
+ * A rough-ER cisterna, in the nucleus-centred spherical frame.
+ *
+ * The rough ER used to be built as open patches of a sphere: a single rippled
+ * surface per cisterna, alpha-faded at its borders. Independent single surfaces
+ * with no edge and no thickness read as torn paper, and because each patch had
+ * its own random centre they were never parallel to one another, so the stack —
+ * the thing that actually makes rough ER recognisable — was not there to see.
+ *
+ * Now each cisterna is a genuine closed sac, and cisternae come in stacks that
+ * share an angular centre so they sit as parallel lamellae. The whole thing
+ * lives in (theta, phi, r) space, so a stack curves around the nucleus for free.
+ */
+export type CisternaSpec = {
+  /** Radius of the mid-surface, from the nucleus centre. */
+  radius: number
+  thetaCentre: number
+  thetaSpan: number
+  phiCentre: number
+  phiSpan: number
+  /** Half-thickness of the sac, in radial units. */
+  thickness: number
+  ripple: number
+  /** Shared across a stack, so lamellae undulate together instead of crossing. */
+  stackSeed: number
+  seed: number
+}
+
+/** Stacks of parallel cisternae, wrapped around the nuclear envelope. */
+export const CISTERNAE: CisternaSpec[] = (() => {
+  const rng = new Rng(60601)
+  const out: CisternaSpec[] = []
+  for (let stack = 0; stack < 5; stack++) {
+    const thetaCentre = rng.range(0.8, Math.PI - 0.8)
+    const phiCentre = rng.range(-0.8, 3.2)
+    const stackSeed = rng.int(1, 9999)
+    const base = NUCLEUS.radius + 0.5 + rng.range(0, 0.5)
+    const count = rng.int(3, 4)
+    for (let i = 0; i < count; i++) {
+      out.push({
+        // Even radial spacing is what reads as a stack; jitter it only slightly.
+        radius: base + i * 0.38 + rng.range(-0.03, 0.03),
+        // Cisternae are ribbons, not walls: narrow in theta, long in phi.
+        thetaCentre: thetaCentre + rng.range(-0.05, 0.05),
+        thetaSpan: rng.range(0.38, 0.5),
+        phiCentre: phiCentre + rng.range(-0.06, 0.06),
+        phiSpan: rng.range(1.2, 1.65),
+        thickness: rng.range(0.07, 0.1),
+        ripple: rng.range(0.1, 0.16),
+        stackSeed,
+        seed: rng.int(1, 9999),
+      })
+    }
+  }
+  return out
+})()
+
+/**
+ * A cisterna's mid-surface centre, in world space. The camera targets below use
+ * it so that "show me the rough ER" lands on an actual sac rather than on a
+ * hand-typed offset that the stacks may have wandered away from.
+ */
+function cisternaCentre(spec: CisternaSpec, radialOffset = 0) {
+  const r = spec.radius + radialOffset
+  const t = spec.thetaCentre
+  const p = spec.phiCentre
+  return new THREE.Vector3(
+    Math.sin(t) * Math.cos(p) * r,
+    Math.cos(t) * r,
+    Math.sin(t) * Math.sin(p) * r,
+  ).add(NUCLEUS.center)
+}
+
+/** The stack with the most cisternae: the one that best reads as lamellae. */
+const FEATURED_STACK = (() => {
+  const byStack = new Map<number, CisternaSpec[]>()
+  for (const c of CISTERNAE) {
+    const list = byStack.get(c.stackSeed) ?? []
+    list.push(c)
+    byStack.set(c.stackSeed, list)
+  }
+  let best: CisternaSpec[] = []
+  for (const list of byStack.values()) if (list.length > best.length) best = list
+  return best
+})()
+
+/** Centre of that stack — mid-cisterna, so the camera sees sheets either side. */
+export const ROUGH_ER_FOCUS = cisternaCentre(FEATURED_STACK[Math.floor(FEATURED_STACK.length / 2)])
+
+/**
+ * Ribosomes are everywhere, so "a ribosome" has to mean somewhere in
+ * particular: just off the outermost sac of that same stack, which is where
+ * they are densest and where being *bound to the ER* is legible.
+ */
+export const RIBOSOME_FOCUS = cisternaCentre(
+  FEATURED_STACK[FEATURED_STACK.length - 1],
+  0.35,
+)
+
 /** Where the rough ER hands cargo off to the Golgi (an "ER exit site"). */
 export const ER_EXIT_SITE = new THREE.Vector3(2.2, -1.0, 1.6)
 
@@ -158,6 +257,28 @@ export const FREE_RIBOSOMES = scatter(rng, 130, {
 export const CYTOSOL_VESICLES = scatter(rng, 26, {
   minR: 3.8, maxR: 7.9, clearance: 0.7, prefix: 'ves', scaleRange: [0.55, 1.0],
 })
+
+/**
+ * Vesicles are scattered through the whole cytosol, so pointing the camera at
+ * the middle of the swarm frames nothing at all — and a single vesicle is a
+ * 0.2-unit bubble that wanders half a unit as it drifts, so aiming at one of
+ * those misses too. Aim at the tightest trio instead: three bubbles drifting
+ * independently keep their centroid roughly still, and the panel is about
+ * vesicles in the plural anyway.
+ */
+export const VESICLE_CLUSTER = (() => {
+  let best: { centre: THREE.Vector3; spread: number } | null = null
+  for (const v of CYTOSOL_VESICLES) {
+    const near = CYTOSOL_VESICLES.filter((o) => o !== v)
+      .sort((a, b) => a.position.distanceTo(v.position) - b.position.distanceTo(v.position))
+      .slice(0, 2)
+    const spread = near[1].position.distanceTo(v.position)
+    if (best && spread >= best.spread) continue
+    const centre = v.position.clone().add(near[0].position).add(near[1].position).divideScalar(3)
+    best = { centre, spread }
+  }
+  return best!
+})()
 
 /** Microtubules radiate from the centrosome out towards the cell cortex. */
 export const MICROTUBULES = (() => {
