@@ -8,6 +8,7 @@ import { CYTOSOL_VESICLES, FREE_RIBOSOMES, LYSOSOMES, PEROXISOMES } from '../../
 import type { ColorPair } from '../../theme/palette'
 import type { StructureId } from '../../data/content'
 import { Highlightable } from '../Highlightable'
+import { instanceSphereRaycast } from '../picking'
 
 /**
  * The small round bodies: lysosomes, peroxisomes and loose transport vesicles.
@@ -136,6 +137,8 @@ function VesicleField({
   )
 }
 
+const RIBOSOME_PICK = instanceSphereRaycast(0.19)
+
 /** Free ribosomes drifting in the cytosol — these make cytosolic proteins. */
 function FreeRibosomes() {
   const geo = useMemo(() => ribosomeGeometry(0.15), [])
@@ -163,12 +166,12 @@ function FreeRibosomes() {
   })
 
   return (
-    <Highlightable id="ribosome" interactive={false}>
+    <Highlightable id="ribosome">
       <instancedMesh
         ref={ref}
         args={[geo, mat, FREE_RIBOSOMES.length]}
         frustumCulled={false}
-        raycast={() => null}
+        raycast={RIBOSOME_PICK}
       />
     </Highlightable>
   )

@@ -9,6 +9,7 @@ import { palette } from '../../theme/palette'
 import { NUCLEUS } from '../../data/layout'
 import { Rng } from '../../lib/rng'
 import { Highlightable } from '../Highlightable'
+import { instanceSphereRaycast } from '../picking'
 
 /**
  * The ER is one continuous membrane that starts at the nuclear envelope. Near
@@ -171,6 +172,9 @@ function RoughERCisternae() {
   )
 }
 
+/** A pick target a little wider than the bead itself: they are a few px across. */
+const RIBOSOME_PICK = instanceSphereRaycast(0.17)
+
 /** Ribosomes bound to the ER surface — what makes rough ER rough. */
 function BoundRibosomes() {
   const placements = useMemo(() => {
@@ -223,13 +227,13 @@ function BoundRibosomes() {
   }, [placements, dummy])
 
   return (
-    <Highlightable id="ribosome" interactive={false}>
+    <Highlightable id="ribosome">
       <group position={NUCLEUS.center}>
         <instancedMesh
           ref={ref}
           args={[geometry, material, placements.length]}
           frustumCulled={false}
-          raycast={() => null}
+          raycast={RIBOSOME_PICK}
         />
       </group>
     </Highlightable>

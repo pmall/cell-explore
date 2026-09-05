@@ -2,6 +2,7 @@ import { useRef, type ReactNode } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
 import { MembraneMaterial } from '../lib/materials'
+import { resolvePick } from './picking'
 import { useHighlightSet, useStore } from '../state/store'
 import type { StructureId } from '../data/content'
 
@@ -75,26 +76,33 @@ export function Highlightable({ id, children, interactive = true, neverDim = fal
     applyDim(group, current.current)
   })
 
+  /**
+   * The handlers live on every structure but they all resolve the *same*
+   * winner from the shared hit list, so whichever one fires first (the nearest,
+   * usually the plasma membrane) answers for the whole event and stops there.
+   * See picking.ts for why the nearest hit is not the right answer.
+   */
   const handlers = interactive
     ? {
-        onPointerOver: (e: { stopPropagation: () => void }) => {
+        onPointerMove: (e: { stopPropagation: () => void; intersections: { object: THREE.Object3D }[] }) => {
           e.stopPropagation()
-          hover(id)
+          const picked = resolvePick(e.intersections) ?? id
+          if (useStore.getState().hovered !== picked) hover(picked)
           document.body.style.cursor = 'pointer'
         },
         onPointerOut: () => {
           hover(null)
           document.body.style.cursor = 'auto'
         },
-        onClick: (e: { stopPropagation: () => void }) => {
+        onClick: (e: { stopPropagation: () => void; intersections: { object: THREE.Object3D }[] }) => {
           e.stopPropagation()
-          select(id)
+          select(resolvePick(e.intersections) ?? id)
         },
       }
     : {}
 
   return (
-    <group ref={groupRef} {...handlers}>
+    <group ref={groupRef} userData={{ structureId: id }} {...handlers}>
       {children}
     </group>
   )
