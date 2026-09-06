@@ -5,6 +5,8 @@ import { BufferGeometryUtils, orientToDirection } from '../../lib/geometry'
 import { useSolidMaterial } from '../../lib/materials'
 import { palette } from '../../theme/palette'
 import { CELL_RADIUS, LYSOSOMES, SIGNAL_RECEPTOR_DIR } from '../../data/layout'
+import { Nameable } from '../Nameable'
+import { instanceSphereRaycast } from '../picking'
 import { cellTime, smooth } from '../clock'
 import { MechanismGroup, proteinGeometry } from './common'
 
@@ -29,6 +31,9 @@ const ENDO_DIR = new THREE.Vector3(-0.62, -0.34, 0.42).normalize()
 const ENDO_START = ENDO_DIR.clone().multiplyScalar(CELL_RADIUS * 0.98)
 
 const CASCADE = 22
+
+const RELAY_PICK = instanceSphereRaycast(0.12)
+const CLATHRIN_PICK = instanceSphereRaycast(0.12)
 
 export function Signalling() {
   const receptorGeo = useMemo(() => {
@@ -187,11 +192,21 @@ export function Signalling() {
 
   return (
     <MechanismGroup id="signalling">
-      <mesh ref={receptor} geometry={receptorGeo} material={receptorMat} position={RECEPTOR_POS} raycast={() => null} />
-      <mesh ref={ligand} geometry={ligandGeo} material={ligandMat} raycast={() => null} />
-      <instancedMesh ref={relays} args={[relayGeo, relayMat, CASCADE]} frustumCulled={false} raycast={() => null} />
-      <mesh ref={vesicle} geometry={vesicleGeo} material={vesicleMat} raycast={() => null} />
-      <instancedMesh ref={clathrin} args={[clathrinGeo, clathrinMat, CLATHRIN_COUNT]} frustumCulled={false} raycast={() => null} />
+      <Nameable id="signalReceptor">
+        <mesh ref={receptor} geometry={receptorGeo} material={receptorMat} position={RECEPTOR_POS} />
+      </Nameable>
+      <Nameable id="ligand">
+        <mesh ref={ligand} geometry={ligandGeo} material={ligandMat} />
+      </Nameable>
+      <Nameable id="secondMessenger">
+        <instancedMesh ref={relays} args={[relayGeo, relayMat, CASCADE]} frustumCulled={false} raycast={RELAY_PICK} />
+      </Nameable>
+      <Nameable id="endocyticVesicle">
+        <mesh ref={vesicle} geometry={vesicleGeo} material={vesicleMat} />
+      </Nameable>
+      <Nameable id="clathrin">
+        <instancedMesh ref={clathrin} args={[clathrinGeo, clathrinMat, CLATHRIN_COUNT]} frustumCulled={false} raycast={CLATHRIN_PICK} />
+      </Nameable>
     </MechanismGroup>
   )
 }

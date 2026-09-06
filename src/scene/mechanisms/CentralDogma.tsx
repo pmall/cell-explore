@@ -6,6 +6,8 @@ import { useSolidMaterial } from '../../lib/materials'
 import { palette } from '../../theme/palette'
 import { ACTIVE_GENE, EXPORT_PORE_DIR, NUCLEUS } from '../../data/layout'
 import { DoubleHelix } from '../organelles/Chromatin'
+import { Nameable } from '../Nameable'
+import { pickWhenVisible, instanceSphereRaycast } from '../picking'
 import { cellTime, phase, smooth } from '../clock'
 import { MechanismGroup, proteinGeometry, strandCurve } from './common'
 
@@ -27,6 +29,9 @@ const GENE_START = NUCLEUS.center.clone().add(ACTIVE_GENE.start)
 const GENE_END = NUCLEUS.center.clone().add(ACTIVE_GENE.end)
 const PORE = NUCLEUS.center.clone().add(EXPORT_PORE_DIR.clone().multiplyScalar(NUCLEUS.radius))
 const RIBOSOME_SITE = NUCLEUS.center.clone().add(new THREE.Vector3(3.2, -1.0, 2.9))
+
+/** tRNAs are 0.1 across and dart about; give the cursor something to catch. */
+const TRNA_PICK = instanceSphereRaycast(0.17)
 
 const TRANSCRIBE = [0.0, 0.34] as const
 const EXPORT = [0.34, 0.48] as const
@@ -224,21 +229,37 @@ export function CentralDogma() {
     }
   })
 
+  // Every actor is named for the tooltip. The gene and the ribosome are labelled
+  // with the structures they are, rather than with near-duplicate molecules.
   return (
     <MechanismGroup id="centralDogma">
-      <DoubleHelix start={GENE_START} end={GENE_END} bubbleRef={bubbleRef} />
-      <mesh ref={nascent} geometry={nascentGeo} material={mrnaMat} raycast={() => null} />
-      <mesh ref={polymerase} geometry={polymeraseGeo} material={polMat} raycast={() => null} />
-      <mesh ref={strand} geometry={strandGeo} material={mrnaMat} raycast={() => null} />
-      <mesh ref={ribosome} geometry={ribosomeGeo} material={riboMat} raycast={() => null} />
-      <instancedMesh
-        ref={trnas}
-        args={[trnaGeo, trnaMat, 3]}
-        frustumCulled={false}
-        raycast={() => null}
-      />
-      <mesh ref={peptide} geometry={peptideGeo} material={peptideMat} raycast={() => null} />
-      <mesh ref={protein} geometry={proteinGeo} material={proteinMat} raycast={() => null} />
+      <Nameable id="chromatin">
+        <DoubleHelix start={GENE_START} end={GENE_END} bubbleRef={bubbleRef} />
+      </Nameable>
+      <Nameable id="mrna">
+        <mesh ref={nascent} geometry={nascentGeo} material={mrnaMat} raycast={pickWhenVisible} />
+        <mesh ref={strand} geometry={strandGeo} material={mrnaMat} raycast={pickWhenVisible} />
+      </Nameable>
+      <Nameable id="rnaPolymerase">
+        <mesh ref={polymerase} geometry={polymeraseGeo} material={polMat} raycast={pickWhenVisible} />
+      </Nameable>
+      <Nameable id="ribosome">
+        <mesh ref={ribosome} geometry={ribosomeGeo} material={riboMat} raycast={pickWhenVisible} />
+      </Nameable>
+      <Nameable id="trna">
+        <instancedMesh
+          ref={trnas}
+          args={[trnaGeo, trnaMat, 3]}
+          frustumCulled={false}
+          raycast={TRNA_PICK}
+        />
+      </Nameable>
+      <Nameable id="polypeptide">
+        <mesh ref={peptide} geometry={peptideGeo} material={peptideMat} raycast={pickWhenVisible} />
+      </Nameable>
+      <Nameable id="foldedProtein">
+        <mesh ref={protein} geometry={proteinGeo} material={proteinMat} raycast={pickWhenVisible} />
+      </Nameable>
     </MechanismGroup>
   )
 }

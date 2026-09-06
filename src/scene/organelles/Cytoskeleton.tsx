@@ -6,6 +6,8 @@ import { MembraneMaterial, useMembraneMaterial, useSolidMaterial } from '../../l
 import { palette } from '../../theme/palette'
 import { ACTIN_FILAMENTS, CENTROSOME, MICROTUBULES } from '../../data/layout'
 import { Highlightable } from '../Highlightable'
+import { noPick, segmentRaycast } from '../picking'
+import { cellTime } from '../clock'
 
 const TUBULAR_SEGMENTS = 60
 const RADIAL_SEGMENTS = 6
@@ -45,19 +47,20 @@ function Microtubule({ spec, index }: { spec: (typeof MICROTUBULES)[number]; ind
   const ref = useRef<THREE.Mesh>(null)
   const total = TUBULAR_SEGMENTS * INDICES_PER_SEGMENT
 
-  useFrame((state) => {
-    ;(mat as MembraneMaterial).time = state.clock.elapsedTime
+  useFrame(() => {
+    const t = cellTime()
+    ;(mat as MembraneMaterial).time = t
     const mesh = ref.current
     if (!mesh) return
     const cycle = 26 + (index % 5) * 4
-    const p = ((state.clock.elapsedTime * 0.9 + spec.phase * 6) % cycle) / cycle
+    const p = ((t * 0.9 + spec.phase * 6) % cycle) / cycle
     // 80% of the cycle growing, 20% collapsing — roughly the real asymmetry.
     const fraction = p < 0.8 ? 0.4 + (p / 0.8) * 0.6 : 1 - ((p - 0.8) / 0.2) * 0.6
     const rings = Math.max(2, Math.floor(TUBULAR_SEGMENTS * fraction))
     mesh.geometry.setDrawRange(0, Math.min(total, rings * INDICES_PER_SEGMENT))
   })
 
-  return <mesh ref={ref} geometry={geometry} material={mat} raycast={() => null} />
+  return <mesh ref={ref} geometry={geometry} material={mat} />
 }
 
 function Microtubules() {
@@ -70,10 +73,22 @@ function Microtubules() {
   )
 }
 
+/** The filaments' centre lines, which stand in for the merged mesh when picking. */
+const ACTIN_PICK = segmentRaycast(
+  ACTIN_FILAMENTS.flatMap((f) => [[f.a, f.c], [f.c, f.b]] as [THREE.Vector3, THREE.Vector3][]),
+  0.32,
+)
+
 /**
  * Cortical actin: a fine, dense mesh pressed against the inside of the plasma
  * membrane. Merged into a single geometry — there are ninety of them and they
  * do not need individual behaviour.
+ *
+ * The cortex lines the whole cell, so a ray aimed anywhere at the interior
+ * crosses it. That is why it is ranked as a lining rather than as a leaf in
+ * picking.ts — pointing at a filament names it, pointing past one at anything
+ * deeper names the deeper thing — and why it is picked against its centre lines
+ * rather than against twenty thousand merged triangles.
  */
 function ActinCortex() {
   const geometry = useMemo(() => {
@@ -88,17 +103,17 @@ function ActinCortex() {
   const mat = useSolidMaterial(palette.actin, { emissive: 0.22, opacity: 0.5 })
   const ref = useRef<THREE.Mesh>(null)
 
-  useFrame((state) => {
+  useFrame(() => {
     const m = ref.current
     if (!m) return
     // The cortex flexes with the membrane it is attached to.
-    const t = state.clock.elapsedTime
+    const t = cellTime()
     m.scale.setScalar(1 + Math.sin(t * 0.5) * 0.004)
   })
 
   return (
     <Highlightable id="actin">
-      <mesh ref={ref} geometry={geometry} material={mat} raycast={() => null} />
+      <mesh ref={ref} geometry={geometry} material={mat} raycast={ACTIN_PICK} />
     </Highlightable>
   )
 }
@@ -136,15 +151,16 @@ function Centrosome() {
   const cloudGeo = useMemo(() => new THREE.SphereGeometry(0.62, 20, 16), [])
   const group = useRef<THREE.Group>(null)
 
-  useFrame((state) => {
-    ;(cloudMat as MembraneMaterial).time = state.clock.elapsedTime
-    if (group.current) group.current.rotation.y = state.clock.elapsedTime * 0.05
+  useFrame(() => {
+    const t = cellTime()
+    ;(cloudMat as MembraneMaterial).time = t
+    if (group.current) group.current.rotation.y = t * 0.05
   })
 
   return (
     <Highlightable id="centrosome">
       <group ref={group} position={CENTROSOME.center}>
-        <mesh geometry={cloudGeo} material={cloudMat} raycast={() => null} />
+        <mesh geometry={cloudGeo} material={cloudMat} raycast={noPick} />
         {/* The two centrioles sit at right angles to each other. */}
         <mesh geometry={geo} material={mat} position={[-0.12, 0, 0]} />
         <mesh geometry={geo} material={mat} position={[0.16, 0.05, 0.1]} rotation={[Math.PI / 2, 0, 0]} />

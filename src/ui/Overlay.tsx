@@ -136,7 +136,9 @@ export function Overlay() {
         <Controls />
 
         <div className="hint">
-          drag to orbit · scroll to zoom · click anything
+          drag to orbit · scroll to zoom · hover to name
+          <br />
+          pick from the <b>Index</b> to fly to a structure
           <br />
           <kbd>Esc</kbd> to step back
         </div>
@@ -166,7 +168,7 @@ function Controls() {
               key={v}
               aria-pressed={speed === v}
               onClick={() => setSpeed(v)}
-              title={v === 0 ? 'Freeze all biological motion' : `${v}x`}
+              title={v === 0 ? 'Freeze the biology — the camera still moves' : `${v}×`}
             >
               {v === 0 ? 'pause' : `${v}×`}
             </button>

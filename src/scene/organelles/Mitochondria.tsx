@@ -7,6 +7,7 @@ import { palette } from '../../theme/palette'
 import { MITOCHONDRIA } from '../../data/layout'
 import { cellTime } from '../clock'
 import { Highlightable } from '../Highlightable'
+import { noPick } from '../picking'
 
 /**
  * Two membranes and a lot of folding. The outer membrane is smooth; the inner
@@ -95,13 +96,13 @@ function Mitochondrion({
     wobbleFreq: 6,
   })
 
-  useFrame((state) => {
-    const t = state.clock.elapsedTime
+  useFrame(() => {
+    const t = cellTime()
     ;[outerMat, innerMat, cristaMat].forEach((m) => ((m as MembraneMaterial).time = t))
     const g = group.current
     if (!g) return
     // Mitochondria are motile: they drift, rotate and jostle constantly.
-    mitochondrionTransform(placement, index, cellTime(), g)
+    mitochondrionTransform(placement, index, t, g)
   })
 
   const cristaPositions = useMemo(
@@ -121,7 +122,7 @@ function Mitochondrion({
     <group ref={group}>
       <group scale={placement.scale}>
         <mesh geometry={outer} material={outerMat} renderOrder={2} />
-        <mesh geometry={inner} material={innerMat} renderOrder={2} raycast={() => null} />
+        <mesh geometry={inner} material={innerMat} renderOrder={2} raycast={noPick} />
         {cristaPositions.map((c, i) => (
           <mesh
             key={i}
@@ -130,7 +131,7 @@ function Mitochondrion({
             position={[c.side * RADIUS * 0.3, c.y, 0]}
             rotation={[c.tilt, i * 0.3, 0]}
             renderOrder={3}
-            raycast={() => null}
+            raycast={noPick}
           />
         ))}
       </group>

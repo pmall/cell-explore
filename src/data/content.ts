@@ -332,6 +332,89 @@ export const STRUCTURE_BY_ID = Object.fromEntries(
   STRUCTURES.map((s) => [s.id, s]),
 ) as Record<StructureId, Structure>
 
+// ── molecules ────────────────────────────────────────────────────────────────
+
+/**
+ * The moving cast of the animated processes: the molecules that do the work.
+ *
+ * They are deliberately not Structures. A structure is a place — it sits still,
+ * it earns a line in the index, and the camera can fly to it. A molecule is an
+ * event: there is no single one of it, it is somewhere different every second,
+ * and "fly to the ATP" is not a thing a viewer can mean. So molecules carry a
+ * name and a colour for the hover tooltip and nothing else.
+ *
+ * Where an actor really is a structure — the ribosome doing the translating, the
+ * vesicles on the secretory route, the DNA of the active gene — it is labelled
+ * with that structure's id instead of getting a near-duplicate entry here.
+ */
+export type MoleculeId =
+  | 'mrna' | 'trna' | 'rnaPolymerase' | 'polypeptide' | 'foldedProtein'
+  | 'cargoProtein' | 'vesicleCoat' | 'secretedProtein'
+  | 'etcComplex' | 'atpSynthase' | 'proton' | 'atp'
+  | 'signalReceptor' | 'ligand' | 'secondMessenger' | 'clathrin' | 'endocyticVesicle'
+  | 'motorProtein'
+
+export type Molecule = {
+  id: MoleculeId
+  name: string
+  aka?: string
+  color: string
+}
+
+export const MOLECULES: Molecule[] = [
+  // central dogma
+  { id: 'rnaPolymerase', name: 'RNA polymerase', aka: 'reads the gene', color: palette.rnaPolymerase },
+  { id: 'mrna', name: 'Messenger RNA', aka: 'mRNA', color: palette.mrna.base },
+  { id: 'trna', name: 'Transfer RNA', aka: 'tRNA', color: palette.trna.base },
+  { id: 'polypeptide', name: 'Polypeptide chain', aka: 'protein being built', color: palette.protein.base },
+  { id: 'foldedProtein', name: 'Folded protein', aka: 'finished and working', color: palette.proteinFolded.base },
+
+  // secretory pathway
+  { id: 'cargoProtein', name: 'Cargo protein', aka: 'in transit', color: palette.protein.base },
+  { id: 'vesicleCoat', name: 'Vesicle coat', aka: 'COPII / COPI', color: palette.coatedVesicle.base },
+  { id: 'secretedProtein', name: 'Secreted protein', aka: 'glycoprotein', color: palette.glycoprotein.base },
+
+  // bioenergetics
+  { id: 'etcComplex', name: 'Electron transport chain', aka: 'proton pumps', color: palette.etc },
+  { id: 'atpSynthase', name: 'ATP synthase', aka: 'the rotary motor', color: palette.atpSynthase },
+  { id: 'proton', name: 'Protons', aka: 'H⁺', color: palette.proton },
+  { id: 'atp', name: 'ATP', aka: 'energy currency', color: palette.atp },
+
+  // signalling
+  { id: 'signalReceptor', name: 'Signal receptor', aka: 'spans the membrane', color: palette.receptor },
+  { id: 'ligand', name: 'Signal molecule', aka: 'ligand', color: palette.ligand },
+  { id: 'secondMessenger', name: 'Second messengers', aka: 'the relay inside', color: palette.secondMessenger },
+  { id: 'clathrin', name: 'Clathrin coat', aka: 'bends the membrane', color: palette.coatedVesicle.rim },
+  { id: 'endocyticVesicle', name: 'Endocytic vesicle', aka: 'the outside, brought in', color: palette.coatedVesicle.base },
+
+  // trafficking
+  { id: 'motorProtein', name: 'Motor protein', aka: 'kinesin & dynein', color: palette.motorProtein },
+]
+
+export const MOLECULE_BY_ID = Object.fromEntries(
+  MOLECULES.map((m) => [m.id, m]),
+) as Record<MoleculeId, Molecule>
+
+// ── labels ───────────────────────────────────────────────────────────────────
+
+/**
+ * Anything the hover tooltip can name. Selection is narrower on purpose — only
+ * a StructureId can be selected, because only a structure has somewhere for the
+ * camera to go and something to say in the info panel.
+ */
+export type LabelId = StructureId | MoleculeId
+
+export type Label = { name: string; aka?: string; color: string }
+
+export const LABEL_BY_ID: Record<LabelId, Label> = {
+  ...STRUCTURE_BY_ID,
+  ...MOLECULE_BY_ID,
+}
+
+export function isStructureId(id: LabelId): id is StructureId {
+  return id in STRUCTURE_BY_ID
+}
+
 // ── guided tours ─────────────────────────────────────────────────────────────
 
 export type TourStep = {

@@ -48,7 +48,11 @@ cristae; lysosomes; peroxisomes; microtubules; cortical actin; centrosome.
 
 ## Interaction
 
-- **Drag** to orbit, **scroll** to zoom, **click** any structure for an explanation.
+- **Drag** to orbit, **scroll** to zoom, **hover** anything to name it — structures and
+  the molecules moving through the processes alike.
+- Pick a structure from the **Index** in the rail to fly to it and read about it. The 3D view
+  itself is not clickable: a ray through a cell crosses every membrane between the camera and
+  its target, so a click could not say which of the nested structures was meant.
 - **Guided tours** fly the camera through a process step by step; arrow keys step,
   space pauses, `Esc` backs out.
 - **Process speed** freezes or accelerates the biology without freezing the camera.
@@ -67,13 +71,23 @@ src/
   ui/                 overlay panels
 ```
 
-Two things are worth knowing before editing:
+Four things are worth knowing before editing:
 
 - **The layout is seeded.** `data/layout.ts` generates positions deterministically
   so tours can fly to hard-coded coordinates. Changing a seed moves everything.
-- **One clock drives the biology.** `scene/clock.ts` accumulates time scaled by the
-  speed control; mechanisms read it rather than the render clock, so changing
-  speed never makes an animation jump mid-cycle.
+- **One clock drives the biology.** Everything inside the cell reads `cellTime()` from
+  `scene/clock.ts`, which accumulates time scaled by the speed control; only the camera
+  reads the render clock. That is what makes "pause" mean pause, and what stops
+  animations jumping when the speed changes.
+- **Two labels, two jobs.** A *structure* (`data/content.ts`) is a place: it appears in the
+  index, the camera can fly to it, and it has a page of text. A *molecule* is an event
+  passing through — it gets a name and a colour for the tooltip and nothing else. Wrap a
+  structure in `Highlightable`, a molecule in `Nameable`.
+- **Picking is by specificity, not by depth.** `scene/picking.ts` explains why, and owns
+  the three ways a mesh declares whether the cursor can find it — `noPick`,
+  `pickWhenVisible` and `instanceSphereRaycast`. Three's raycaster ignores `visible`, so
+  anything that hides itself with that flag needs `pickWhenVisible` or it will go on
+  naming itself while invisible.
 
 ## Looking at changes
 

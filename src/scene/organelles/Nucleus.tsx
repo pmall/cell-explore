@@ -6,6 +6,8 @@ import { MembraneMaterial, useMembraneMaterial, useSolidMaterial } from '../../l
 import { palette } from '../../theme/palette'
 import { NUCLEAR_PORES, NUCLEOLUS, NUCLEUS } from '../../data/layout'
 import { Highlightable } from '../Highlightable'
+import { noPick } from '../picking'
+import { cellTime } from '../clock'
 
 /**
  * The nuclear envelope is genuinely two membranes with a gap between them — the
@@ -88,17 +90,18 @@ function Nucleolus() {
     emissive: 0.75,
   })
 
-  useFrame((state) => {
+  useFrame(() => {
     // A nucleolus has no membrane: it is a liquid droplet. Let it jiggle.
-    mat.time = state.clock.elapsedTime
-    innerMat.time = state.clock.elapsedTime
+    const t = cellTime()
+    mat.time = t
+    innerMat.time = t
   })
 
   return (
     <Highlightable id="nucleolus">
       <group position={NUCLEOLUS.center.clone().sub(NUCLEUS.center)}>
         <mesh geometry={geo} material={mat} />
-        <mesh geometry={inner} material={innerMat} raycast={() => null} />
+        <mesh geometry={inner} material={innerMat} raycast={noPick} />
       </group>
     </Highlightable>
   )
@@ -147,8 +150,8 @@ export function Nucleus({ children }: { children?: React.ReactNode }) {
     side: THREE.BackSide,
   })
 
-  useFrame((state) => {
-    const t = state.clock.elapsedTime
+  useFrame(() => {
+    const t = cellTime()
     ;[outerMat, innerMat, nucleoplasmMat].forEach((m) => ((m as MembraneMaterial).time = t))
   })
 
@@ -156,8 +159,8 @@ export function Nucleus({ children }: { children?: React.ReactNode }) {
     <group position={NUCLEUS.center}>
       <Highlightable id="nucleus">
         <mesh geometry={outerGeo} material={outerMat} renderOrder={1} />
-        <mesh geometry={innerGeo} material={innerMat} renderOrder={1} raycast={() => null} />
-        <mesh geometry={nucleoplasmGeo} material={nucleoplasmMat} renderOrder={0} raycast={() => null} />
+        <mesh geometry={innerGeo} material={innerMat} renderOrder={1} raycast={noPick} />
+        <mesh geometry={nucleoplasmGeo} material={nucleoplasmMat} renderOrder={0} raycast={noPick} />
       </Highlightable>
       <NuclearPores />
       <Nucleolus />

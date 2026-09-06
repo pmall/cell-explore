@@ -1,10 +1,11 @@
 import { useEffect, useRef, useState } from 'react'
-import { STRUCTURE_BY_ID } from '../data/content'
+import { LABEL_BY_ID } from '../data/content'
 import { useStore } from '../state/store'
 
 /**
- * A label that follows the cursor over whatever is under it. Kept in the DOM
- * rather than in the 3D scene: text stays crisp, and it costs nothing.
+ * A label that follows the cursor over whatever is under it — a structure or
+ * one of the molecules moving through a process. Kept in the DOM rather than in
+ * the 3D scene: text stays crisp, and it costs nothing.
  */
 export function HoverTag() {
   const hovered = useStore((s) => s.hovered)
@@ -32,13 +33,16 @@ export function HoverTag() {
   }, [hovered, showLabels])
 
   if (!visible || !hovered) return null
-  const structure = STRUCTURE_BY_ID[hovered]
-  if (!structure) return null
+  const label = LABEL_BY_ID[hovered]
+  if (!label) return null
 
   return (
     <div className="hover-tag" ref={ref}>
-      <span className="swatch" style={{ background: structure.color, color: structure.color }} />
-      {structure.name}
+      <span className="swatch" style={{ background: label.color, color: label.color }} />
+      <span>
+        {label.name}
+        {label.aka && <span className="aka"> · {label.aka}</span>}
+      </span>
     </div>
   )
 }

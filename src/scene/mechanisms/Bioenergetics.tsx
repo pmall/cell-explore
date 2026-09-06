@@ -11,6 +11,8 @@ import {
   MITO_SYNTHASE_LOCAL,
 } from '../../data/layout'
 import { mitochondrionTransform } from '../organelles/Mitochondria'
+import { Nameable } from '../Nameable'
+import { instanceSphereRaycast } from '../picking'
 import { cellTime } from '../clock'
 import { MechanismGroup } from './common'
 
@@ -29,6 +31,11 @@ const HOST = MITOCHONDRIA[HOST_INDEX]
 const PROTONS = 16
 const ATP_COUNT = 7
 
+// These live inside a mitochondrion scaled down by its own placement, so the
+// targets are generous in the local space they are tested in.
+const PROTON_PICK = instanceSphereRaycast(0.1)
+const ATP_PICK = instanceSphereRaycast(0.16)
+
 export function Bioenergetics() {
   // Local space of the mitochondrion: long axis is Y, radius ~0.52.
   const protonLoop = useMemo(
@@ -44,10 +51,7 @@ export function Bioenergetics() {
   const synthasePosition = MITO_SYNTHASE_LOCAL
 
   const protonGeo = useMemo(() => new THREE.SphereGeometry(0.035, 6, 5), [])
-  const atpGeo = useMemo(() => {
-    const g = new THREE.TetrahedronGeometry(0.075)
-    return g
-  }, [])
+  const atpGeo = useMemo(() => new THREE.TetrahedronGeometry(0.075), [])
   const complexGeo = useMemo(() => {
     const body = new THREE.CylinderGeometry(0.075, 0.095, 0.2, 8)
     const top = new THREE.SphereGeometry(0.075, 8, 6)
@@ -143,19 +147,26 @@ export function Bioenergetics() {
     <MechanismGroup id="bioenergetics">
       <group ref={host}>
         <group scale={HOST.scale}>
-          {complexPositions.map((p, i) => (
-            <mesh key={i} geometry={complexGeo} material={complexMat} position={p} raycast={() => null} />
-          ))}
-          <mesh geometry={synthaseStatorGeo} material={synthaseMat} position={synthasePosition} raycast={() => null} />
-          <mesh
-            ref={head}
-            geometry={synthaseHeadGeo}
-            material={synthaseMat}
-            position={[synthasePosition.x, synthasePosition.y - 0.19, synthasePosition.z]}
-            raycast={() => null}
-          />
-          <instancedMesh ref={protons} args={[protonGeo, protonMat, PROTONS]} frustumCulled={false} raycast={() => null} />
-          <instancedMesh ref={atp} args={[atpGeo, atpMat, ATP_COUNT]} frustumCulled={false} raycast={() => null} />
+          <Nameable id="etcComplex">
+            {complexPositions.map((p, i) => (
+              <mesh key={i} geometry={complexGeo} material={complexMat} position={p} />
+            ))}
+          </Nameable>
+          <Nameable id="atpSynthase">
+            <mesh geometry={synthaseStatorGeo} material={synthaseMat} position={synthasePosition} />
+            <mesh
+              ref={head}
+              geometry={synthaseHeadGeo}
+              material={synthaseMat}
+              position={[synthasePosition.x, synthasePosition.y - 0.19, synthasePosition.z]}
+            />
+          </Nameable>
+          <Nameable id="proton">
+            <instancedMesh ref={protons} args={[protonGeo, protonMat, PROTONS]} frustumCulled={false} raycast={PROTON_PICK} />
+          </Nameable>
+          <Nameable id="atp">
+            <instancedMesh ref={atp} args={[atpGeo, atpMat, ATP_COUNT]} frustumCulled={false} raycast={ATP_PICK} />
+          </Nameable>
         </group>
       </group>
     </MechanismGroup>

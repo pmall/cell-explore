@@ -1,6 +1,7 @@
 import { useMemo } from 'react'
 import * as THREE from 'three'
 import { palette } from '../theme/palette'
+import { noPick } from './picking'
 
 /**
  * The world outside the cell. A gradient sphere rather than a flat clear colour,
@@ -46,5 +47,5 @@ export function Backdrop() {
 
   const geometry = useMemo(() => new THREE.SphereGeometry(220, 32, 24), [])
 
-  return <mesh geometry={geometry} material={material} frustumCulled={false} raycast={() => null} />
+  return <mesh geometry={geometry} material={material} frustumCulled={false} raycast={noPick} />
 }

@@ -6,6 +6,7 @@ import { useSolidMaterial } from '../../lib/materials'
 import { palette } from '../../theme/palette'
 import { CELL_RADIUS, MEMBRANE_PROTEINS } from '../../data/layout'
 import { Highlightable } from '../Highlightable'
+import { cellTime } from '../clock'
 
 /**
  * Half the mass of a membrane is protein. Three shapes stand in for the three
@@ -66,10 +67,10 @@ function ProteinSet({ kind, geometry, color }: { kind: Kind; geometry: THREE.Buf
 
   // Membrane proteins are not nailed down — they drift laterally through the
   // bilayer. A slow bob is a cheap way to say "this thing is floating".
-  useFrame((state) => {
+  useFrame(() => {
     const mesh = ref.current
     if (!mesh) return
-    const t = state.clock.elapsedTime
+    const t = cellTime()
     items.forEach((item, i) => {
       const bob = Math.sin(t * 0.4 + item.phase) * 0.03
       dummy.position.copy(item.dir).multiplyScalar(CELL_RADIUS * 0.985 + bob)

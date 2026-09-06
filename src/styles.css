@@ -170,7 +170,8 @@ canvas { display: block; touch-action: none; }
 }
 .index-item:hover { background: rgba(255,255,255,0.06); }
 .index-item[data-active='true'] { background: rgba(255,255,255,0.1); }
-.index-item .aka { color: var(--ink-faint); font-size: 11px; }
+.index-item .aka,
+.hover-tag .aka { color: var(--ink-faint); font-size: 11px; }
 
 /* ── info panel ───────────────────────────────────────────────────────────── */
 .info {

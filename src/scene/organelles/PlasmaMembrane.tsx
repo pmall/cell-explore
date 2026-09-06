@@ -6,6 +6,8 @@ import { MembraneMaterial, useMembraneMaterial } from '../../lib/materials'
 import { palette } from '../../theme/palette'
 import { CELL_RADIUS } from '../../data/layout'
 import { Highlightable } from '../Highlightable'
+import { noPick } from '../picking'
+import { cellTime } from '../clock'
 
 /**
  * The plasma membrane is drawn as two nested shells: the bilayer itself and an
@@ -65,8 +67,8 @@ export function PlasmaMembrane() {
     [outerMat, innerMat],
   )
 
-  useFrame((state, delta) => {
-    const t = state.clock.elapsedTime
+  useFrame((_, delta) => {
+    const t = cellTime()
     for (const m of [outerMat, innerMat]) (m as MembraneMaterial).time = t
 
     // Inside the cell? Pull the shell back so it stops occluding the interior.
@@ -83,7 +85,7 @@ export function PlasmaMembrane() {
   return (
     <Highlightable id="plasmaMembrane" neverDim>
       <mesh geometry={outerGeo} material={outerMat} renderOrder={-1} />
-      <mesh geometry={innerGeo} material={innerMat} renderOrder={-1} raycast={() => null} />
+      <mesh geometry={innerGeo} material={innerMat} renderOrder={-1} raycast={noPick} />
     </Highlightable>
   )
 }

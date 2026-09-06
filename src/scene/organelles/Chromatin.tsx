@@ -4,9 +4,11 @@ import * as THREE from 'three'
 import { tubeGeometry } from '../../lib/geometry'
 import { useSolidMaterial } from '../../lib/materials'
 import { palette } from '../../theme/palette'
-import { ACTIVE_GENE, CHROMATIN, NUCLEUS } from '../../data/layout'
+import { CHROMATIN } from '../../data/layout'
 import { Rng } from '../../lib/rng'
 import { Highlightable } from '../Highlightable'
+import { noPick } from '../picking'
+import { cellTime } from '../clock'
 
 /** B-DNA proportions, scaled up: 10.5 base pairs per turn, rise 0.34 nm. */
 const BP_PER_TURN = 10.5
@@ -81,11 +83,28 @@ export function DoubleHelix({ start, end, bubbleRef, bubbleWidth = 0.16 }: Helix
     return Array.from({ length: frame.basePairs }, () => rng.pick(bases))
   }, [frame.basePairs])
 
+  /**
+   * A hit target for the hover tooltip. The visible helix is two 0.045-radius
+   * tubes with mostly empty space between them, which the cursor slips through
+   * nearly every time; this sleeve covers the cylinder the helix sweeps out, so
+   * pointing anywhere at the strand names it. It is never drawn: see picking.ts
+   * for why an invisible mesh is still a perfectly good hit target.
+   */
+  const sleeveGeo = useMemo(
+    () => new THREE.CylinderGeometry(HELIX_RADIUS + 0.1, HELIX_RADIUS + 0.1, frame.length, 8, 1, true),
+    [frame.length],
+  )
+  const sleeveTransform = useMemo(() => {
+    const position = start.clone().addScaledVector(frame.dir, frame.length / 2)
+    const quaternion = new THREE.Quaternion().setFromUnitVectors(
+      new THREE.Vector3(0, 1, 0),
+      frame.dir,
+    )
+    return { position, quaternion }
+  }, [start, frame])
+
   const rungsRef = useRef<THREE.InstancedMesh>(null)
-  const rungGeo = useMemo(() => {
-    const g = new THREE.CylinderGeometry(0.028, 0.028, 1, 6)
-    return g
-  }, [])
+  const rungGeo = useMemo(() => new THREE.CylinderGeometry(0.028, 0.028, 1, 6), [])
   const dummy = useMemo(() => new THREE.Object3D(), [])
 
   useLayoutEffect(() => {
@@ -138,7 +157,13 @@ export function DoubleHelix({ start, end, bubbleRef, bubbleWidth = 0.16 }: Helix
         ref={rungsRef}
         args={[rungGeo, rungMat, frame.basePairs]}
         frustumCulled={false}
-        raycast={() => null}
+        raycast={noPick}
+      />
+      <mesh
+        geometry={sleeveGeo}
+        position={sleeveTransform.position}
+        quaternion={sleeveTransform.quaternion}
+        visible={false}
       />
     </group>
   )
@@ -189,7 +214,7 @@ function ChromatinFibre({ strand, index }: { strand: (typeof CHROMATIN)[number];
         ref={beadsRef}
         args={[beadGeo, beadMat, beadCount]}
         frustumCulled={false}
-        raycast={() => null}
+        raycast={noPick}
       />
     </group>
   )
@@ -198,11 +223,11 @@ function ChromatinFibre({ strand, index }: { strand: (typeof CHROMATIN)[number];
 export function Chromatin() {
   const groupRef = useRef<THREE.Group>(null)
 
-  useFrame((state) => {
+  useFrame(() => {
     // Chromatin is not static — loops jostle constantly in the nucleoplasm.
     const g = groupRef.current
     if (!g) return
-    const t = state.clock.elapsedTime
+    const t = cellTime()
     g.rotation.y = Math.sin(t * 0.06) * 0.08
     g.rotation.x = Math.cos(t * 0.05) * 0.05
   })
@@ -217,5 +242,3 @@ export function Chromatin() {
     </Highlightable>
   )
 }
-
-export { ACTIVE_GENE, NUCLEUS }

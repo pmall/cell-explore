@@ -1,10 +1,11 @@
 import { useMemo, useRef } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { BufferGeometryUtils } from '../../lib/geometry'
 import { useSolidMaterial } from '../../lib/materials'
 import { palette } from '../../theme/palette'
 import { CENTROSOME, MICROTUBULES } from '../../data/layout'
+import { Nameable } from '../Nameable'
+import { instanceSphereRaycast } from '../picking'
 import { cellTime } from '../clock'
 import { MechanismGroup } from './common'
 
@@ -22,11 +23,13 @@ const PERIOD = 30
 /** Nanometre-scale steps, exaggerated so the gait is visible from a distance. */
 const STEP_RATE = 7
 
+const MOTOR_PICK = instanceSphereRaycast(0.12)
+const CARGO_PICK = instanceSphereRaycast(0.24)
+
+/** The stalk the cargo rides on: a stick standing up off the microtubule. */
 function motorGeometry() {
-  const stalk = new THREE.CylinderGeometry(0.018, 0.018, 0.2, 5)
-  stalk.translate(0, 0.1, 0)
-  const g = BufferGeometryUtils.mergeGeometries([stalk], false)
-  g.computeVertexNormals()
+  const g = new THREE.CylinderGeometry(0.018, 0.018, 0.2, 5)
+  g.translate(0, 0.1, 0)
   return g
 }
 
@@ -127,9 +130,13 @@ export function Trafficking() {
 
   return (
     <MechanismGroup id="trafficking">
-      <instancedMesh ref={feet} args={[footGeo, motorMat, WALKERS.length * 2]} frustumCulled={false} raycast={() => null} />
-      <instancedMesh ref={stalks} args={[stalkGeo, motorMat, WALKERS.length]} frustumCulled={false} raycast={() => null} />
-      <instancedMesh ref={cargos} args={[cargoGeo, cargoMat, WALKERS.length]} frustumCulled={false} raycast={() => null} />
+      <Nameable id="motorProtein">
+        <instancedMesh ref={feet} args={[footGeo, motorMat, WALKERS.length * 2]} frustumCulled={false} raycast={MOTOR_PICK} />
+        <instancedMesh ref={stalks} args={[stalkGeo, motorMat, WALKERS.length]} frustumCulled={false} raycast={MOTOR_PICK} />
+      </Nameable>
+      <Nameable id="vesicle">
+        <instancedMesh ref={cargos} args={[cargoGeo, cargoMat, WALKERS.length]} frustumCulled={false} raycast={CARGO_PICK} />
+      </Nameable>
     </MechanismGroup>
   )
 }

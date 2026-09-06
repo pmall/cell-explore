@@ -16,7 +16,6 @@ export const palette = {
 
   // ── boundary ───────────────────────────────────────────────────────────────
   membrane: { base: '#8fbfc4', rim: '#cdeae6' }, // Nile Blue
-  glycocalyx: '#a7cfd0',
 
   // ── nucleus ────────────────────────────────────────────────────────────────
   nucleus: { base: '#a99bc1', rim: '#d9cfe8' }, // Light Grape Violet
@@ -71,7 +70,6 @@ export const palette = {
   // ── cytoskeleton ───────────────────────────────────────────────────────────
   microtubule: '#a8b8d0', // Etain Blue
   actin: '#c9cbe2', // Pale Blue Violet
-  intermediate: '#b6c4bd',
   centrosome: { base: '#8fa1c7', rim: '#c4d0e5' },
   motorProtein: '#dbb7c4',
 

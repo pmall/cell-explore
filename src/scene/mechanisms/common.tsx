@@ -1,14 +1,13 @@
 import { useRef, type ReactNode } from 'react'
 import { useFrame } from '@react-three/fiber'
 import * as THREE from 'three'
-import { MembraneMaterial } from '../../lib/materials'
+import { applyDim, DimLevel } from '../../lib/dim'
 import { useActiveMechanism } from '../../state/store'
 import type { MechanismId } from '../../data/content'
 
 /** How far the other processes recede while a tour is discussing one of them. */
 const BACKGROUND = 0.22
-
-const baseOpacity = new WeakMap<THREE.Material, number>()
+const FADE_SPEED = 2.5
 
 /**
  * All five processes run continuously — a cell does not do one thing at a time,
@@ -18,29 +17,14 @@ const baseOpacity = new WeakMap<THREE.Material, number>()
 export function MechanismGroup({ id, children }: { id: MechanismId; children: ReactNode }) {
   const group = useRef<THREE.Group>(null)
   const active = useActiveMechanism()
-  const level = useRef(1)
+  const level = useRef(new DimLevel())
 
   useFrame((_, delta) => {
     const g = group.current
     if (!g) return
     const target = !active || active === id ? 1 : BACKGROUND
-    level.current += (target - level.current) * Math.min(1, delta * 2.5)
-    const dim = level.current
-
-    g.traverse((child) => {
-      const mesh = child as THREE.Mesh
-      const material = mesh.material as THREE.Material | THREE.Material[] | undefined
-      if (!material) return
-      for (const m of Array.isArray(material) ? material : [material]) {
-        if (m instanceof MembraneMaterial) {
-          m.dim = dim
-          continue
-        }
-        if (!baseOpacity.has(m)) baseOpacity.set(m, m.opacity)
-        m.opacity = (baseOpacity.get(m) ?? 1) * dim
-        m.transparent = true
-      }
-    })
+    const dim = level.current.step(target, delta, FADE_SPEED)
+    if (dim !== null) applyDim(g, dim)
   })
 
   return <group ref={group}>{children}</group>

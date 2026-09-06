@@ -4,6 +4,8 @@ import * as THREE from 'three'
 import { useSolidMaterial } from '../../lib/materials'
 import { palette } from '../../theme/palette'
 import { CELL_RADIUS, ER_EXIT_SITE, GOLGI } from '../../data/layout'
+import { Nameable } from '../Nameable'
+import { instanceSphereRaycast } from '../picking'
 import { cellTime, smooth } from '../clock'
 import { MechanismGroup, proteinGeometry } from './common'
 
@@ -25,6 +27,10 @@ const CIS = GOLGI.center.clone().addScaledVector(GOLGI.axis, -STACK_HALF - 0.45)
 const TRANS = GOLGI.center.clone().addScaledVector(GOLGI.axis, STACK_HALF + 0.45)
 const EXIT_DIR = new THREE.Vector3(0.5, -0.5, 0.71).normalize()
 const SURFACE = EXIT_DIR.clone().multiplyScalar(CELL_RADIUS * 0.985)
+
+const VESICLE_PICK = instanceSphereRaycast(0.26)
+const CARGO_PICK = instanceSphereRaycast(0.16)
+const COAT_PICK = instanceSphereRaycast(0.1)
 
 export function SecretoryPathway() {
   const path = useMemo(
@@ -93,8 +99,9 @@ export function SecretoryPathway() {
       if (cargos.current) {
         dummy.position.copy(at)
         dummy.rotation.set(t * 0.9 + i, t * 0.6 + i, 0)
-        // Cargo survives the fusion — it is released, not destroyed.
-        dummy.scale.setScalar(bud * (p > 0.94 ? 1 : 1))
+        // Cargo survives the fusion — it is released, not destroyed, so unlike
+        // the vesicle around it, it does not shrink away at the end of the run.
+        dummy.scale.setScalar(bud)
         dummy.updateMatrix()
         cargos.current.setMatrixAt(i, dummy.matrix)
         // Glycosylation happens in the Golgi: roughly the middle of the route.
@@ -157,10 +164,18 @@ export function SecretoryPathway() {
 
   return (
     <MechanismGroup id="secretory">
-      <instancedMesh ref={vesicles} args={[vesicleGeo, vesicleMat, CARRIERS]} frustumCulled={false} raycast={() => null} />
-      <instancedMesh ref={cargos} args={[cargoGeo, cargoMat, CARRIERS]} frustumCulled={false} raycast={() => null} />
-      <instancedMesh ref={coats} args={[coatGeo, coatMat, CARRIERS * COATS_PER]} frustumCulled={false} raycast={() => null} />
-      <instancedMesh ref={burst} args={[cargoGeo, burstMat, 10]} frustumCulled={false} raycast={() => null} />
+      <Nameable id="vesicle">
+        <instancedMesh ref={vesicles} args={[vesicleGeo, vesicleMat, CARRIERS]} frustumCulled={false} raycast={VESICLE_PICK} />
+      </Nameable>
+      <Nameable id="cargoProtein">
+        <instancedMesh ref={cargos} args={[cargoGeo, cargoMat, CARRIERS]} frustumCulled={false} raycast={CARGO_PICK} />
+      </Nameable>
+      <Nameable id="vesicleCoat">
+        <instancedMesh ref={coats} args={[coatGeo, coatMat, CARRIERS * COATS_PER]} frustumCulled={false} raycast={COAT_PICK} />
+      </Nameable>
+      <Nameable id="secretedProtein">
+        <instancedMesh ref={burst} args={[cargoGeo, burstMat, 10]} frustumCulled={false} raycast={CARGO_PICK} />
+      </Nameable>
     </MechanismGroup>
   )
 }

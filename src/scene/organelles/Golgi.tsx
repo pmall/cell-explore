@@ -7,6 +7,8 @@ import { palette } from '../../theme/palette'
 import { GOLGI } from '../../data/layout'
 import { Rng } from '../../lib/rng'
 import { Highlightable } from '../Highlightable'
+import { noPick } from '../picking'
+import { cellTime } from '../clock'
 
 /**
  * A stack of flattened sacs. Cargo enters at the cis face (nearest the ER) and
@@ -39,12 +41,13 @@ function Cisterna({ index, count }: { index: number; count: number }) {
 
   const ref = useRef<THREE.Mesh>(null)
 
-  useFrame((state) => {
-    ;(mat as MembraneMaterial).time = state.clock.elapsedTime
+  useFrame(() => {
+    const t = cellTime()
+    ;(mat as MembraneMaterial).time = t
     const m = ref.current
     if (!m) return
     // Cisternae are not rigid — they flex slowly.
-    m.rotation.y = Math.sin(state.clock.elapsedTime * 0.15 + index) * 0.06
+    m.rotation.y = Math.sin(t * 0.15 + index) * 0.06
   })
 
   return (
@@ -80,10 +83,10 @@ function GolgiVesicles() {
   const ref = useRef<THREE.InstancedMesh>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
 
-  useFrame((state) => {
+  useFrame(() => {
     const mesh = ref.current
     if (!mesh) return
-    const t = state.clock.elapsedTime
+    const t = cellTime()
     items.forEach((item, i) => {
       const drift = Math.sin(t * item.speed + item.phase)
       dummy.position.copy(item.base)
@@ -98,7 +101,7 @@ function GolgiVesicles() {
   })
 
   return (
-    <instancedMesh ref={ref} args={[geo, mat, items.length]} frustumCulled={false} raycast={() => null} />
+    <instancedMesh ref={ref} args={[geo, mat, items.length]} frustumCulled={false} raycast={noPick} />
   )
 }
 

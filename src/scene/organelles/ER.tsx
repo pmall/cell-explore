@@ -10,6 +10,7 @@ import { CISTERNAE, NUCLEUS, type CisternaSpec } from '../../data/layout'
 import { Rng } from '../../lib/rng'
 import { Highlightable } from '../Highlightable'
 import { instanceSphereRaycast } from '../picking'
+import { cellTime } from '../clock'
 
 /**
  * The ER is one continuous membrane that starts at the nuclear envelope. Near
@@ -100,8 +101,8 @@ function RoughERCisternae() {
     wobbleFreq: 2.4,
   })
 
-  useFrame((state) => {
-    ;(mat as MembraneMaterial).time = state.clock.elapsedTime
+  useFrame(() => {
+    ;(mat as MembraneMaterial).time = cellTime()
   })
 
   return (
@@ -246,8 +247,8 @@ function SmoothER() {
     side: THREE.DoubleSide,
   })
 
-  useFrame((state) => {
-    ;(mat as MembraneMaterial).time = state.clock.elapsedTime
+  useFrame(() => {
+    ;(mat as MembraneMaterial).time = cellTime()
   })
 
   return (

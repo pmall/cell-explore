@@ -3,9 +3,14 @@ import { useStore } from '../state/store'
 
 /**
  * A single clock for every biological process in the scene, scaled by the
- * viewer's speed control. Using the raw render clock instead would mean the
- * animations jump whenever the speed changes, and would make it impossible to
- * pause the biology while still letting the camera move.
+ * viewer's speed control.
+ *
+ * The rule is: anything inside the cell reads `cellTime()`; only the camera
+ * reads the render clock. That is what lets the speed control mean what it
+ * says — at 0 the biology genuinely stops, membranes and drifting organelles
+ * included, while the viewer can still orbit and fly around a frozen cell.
+ * Mixing the two clocks leaves half the scene twitching through a "pause", and
+ * makes the other half jump whenever the speed changes.
  */
 const state = { t: 0 }
 

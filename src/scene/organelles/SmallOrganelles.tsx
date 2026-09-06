@@ -8,7 +8,8 @@ import { CYTOSOL_VESICLES, FREE_RIBOSOMES, LYSOSOMES, PEROXISOMES } from '../../
 import type { ColorPair } from '../../theme/palette'
 import type { StructureId } from '../../data/content'
 import { Highlightable } from '../Highlightable'
-import { instanceSphereRaycast } from '../picking'
+import { noPick, instanceSphereRaycast } from '../picking'
+import { cellTime } from '../clock'
 
 /**
  * The small round bodies: lysosomes, peroxisomes and loose transport vesicles.
@@ -80,8 +81,8 @@ function VesicleField({
     return out
   }, [cargo, placements, radius])
 
-  useFrame((state) => {
-    const t = state.clock.elapsedTime
+  useFrame(() => {
+    const t = cellTime()
     ;(mat as MembraneMaterial).time = t
 
     placements.forEach((p, i) => {
@@ -130,7 +131,7 @@ function VesicleField({
           ref={cargoRef}
           args={[cargoGeo, cargoMat, cargoLayout.length]}
           frustumCulled={false}
-          raycast={() => null}
+          raycast={noPick}
         />
       )}
     </Highlightable>
@@ -146,10 +147,10 @@ function FreeRibosomes() {
   const ref = useRef<THREE.InstancedMesh>(null)
   const dummy = useMemo(() => new THREE.Object3D(), [])
 
-  useFrame((state) => {
+  useFrame(() => {
     const mesh = ref.current
     if (!mesh) return
-    const t = state.clock.elapsedTime
+    const t = cellTime()
     FREE_RIBOSOMES.forEach((p, i) => {
       // Brownian-ish wander. Real ribosomes are battered by thermal motion.
       dummy.position.set(

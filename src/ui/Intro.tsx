@@ -16,7 +16,8 @@ export function Intro() {
         <ul>
           <li><b>Drag</b> to orbit around the cell</li>
           <li><b>Scroll</b> to fly in and out</li>
-          <li><b>Click</b> anything to learn what it is</li>
+          <li><b>Hover</b> anything to name it — organelles and molecules alike</li>
+          <li><b>Index</b> picks a structure and flies you to it</li>
           <li><b>Tours</b> walk you through a process step by step</li>
         </ul>
         <div className="intro-actions">

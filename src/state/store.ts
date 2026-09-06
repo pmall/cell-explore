@@ -3,7 +3,7 @@ import { create } from 'zustand'
 import * as THREE from 'three'
 import {
   OVERVIEW_FOCUS, STRUCTURE_BY_ID, TOUR_BY_ID,
-  type Focus, type MechanismId, type StructureId,
+  type LabelId, type MechanismId, type StructureId,
 } from '../data/content'
 
 export type Quality = 'low' | 'high'
@@ -16,8 +16,10 @@ type CameraGoal = {
 }
 
 type State = {
+  /** Only a structure can be selected: a molecule has nowhere to fly to. */
   selected: StructureId | null
-  hovered: StructureId | null
+  /** Anything nameable can be hovered, molecules included. */
+  hovered: LabelId | null
 
   tourId: string | null
   stepIndex: number
@@ -32,8 +34,7 @@ type State = {
   intro: boolean
 
   select: (id: StructureId | null) => void
-  hover: (id: StructureId | null) => void
-  focusOn: (focus: Focus) => void
+  hover: (id: LabelId | null) => void
 
   startTour: (id: string) => void
   exitTour: () => void
@@ -86,11 +87,6 @@ export const useStore = create<State>((set, get) => ({
   },
 
   hover: (id) => set({ hovered: id }),
-
-  focusOn: (focus) =>
-    set((s) => ({
-      cameraGoal: { target: focus.target.clone(), distance: focus.distance, nonce: s.cameraGoal.nonce + 1 },
-    })),
 
   startTour: (id) => {
     const tour = TOUR_BY_ID[id]
