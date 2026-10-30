@@ -404,7 +404,10 @@ canvas { display: block; touch-action: none; }
   .menu-toggle { display: block; }
   /* The rail is a sheet here: out of the way until the masthead button asks
      for it, and it takes the row back from the info panel while it is open. */
-  .rail { display: none; }
+  .rail, .controls { display: none; }
+  /* Settings are not worth a permanent strip of a phone screen; they open
+     with the menu, at the bottom where the thumb is. */
+  .controls[data-open='true'] { display: flex; }
   .rail[data-open='true'] {
     display: flex;
     grid-row: 2;

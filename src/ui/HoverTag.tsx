@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useLayoutEffect, useRef } from 'react'
 import { LABEL_BY_ID } from '../data/content'
 import { useStore } from '../state/store'
 
@@ -11,29 +11,27 @@ export function HoverTag() {
   const hovered = useStore((s) => s.hovered)
   const showLabels = useStore((s) => s.showLabels)
   const ref = useRef<HTMLDivElement>(null)
-  const [visible, setVisible] = useState(false)
+  const pointer = useRef({ x: 0, y: 0 })
 
+  // The cursor is tracked all the time, not only while something is hovered.
+  // The pointermove that sets `hovered` has already been dispatched by the time
+  // the tag mounts, so a tag that waited for the next one sat unpositioned in
+  // the corner until the cursor moved again — forever, if it had stopped.
   useEffect(() => {
-    if (!hovered || !showLabels) {
-      setVisible(false)
-      return
-    }
-    setVisible(true)
     const move = (e: PointerEvent) => {
-      const el = ref.current
-      if (!el) return
-      // Flip to the left of the cursor near the right edge so it never clips.
-      const flip = e.clientX > window.innerWidth - 240
-      el.style.left = `${e.clientX}px`
-      el.style.top = `${e.clientY}px`
-      el.style.transform = flip ? 'translate(calc(-100% - 14px), -50%)' : 'translate(14px, -50%)'
+      pointer.current = { x: e.clientX, y: e.clientY }
+      place(ref.current, pointer.current)
     }
     window.addEventListener('pointermove', move)
     return () => window.removeEventListener('pointermove', move)
-  }, [hovered, showLabels])
+  }, [])
 
-  if (!visible || !hovered) return null
-  const label = LABEL_BY_ID[hovered]
+  const label = hovered && showLabels ? LABEL_BY_ID[hovered] : null
+
+  useLayoutEffect(() => {
+    place(ref.current, pointer.current)
+  }, [label])
+
   if (!label) return null
 
   return (
@@ -45,4 +43,13 @@ export function HoverTag() {
       </span>
     </div>
   )
+}
+
+function place(el: HTMLDivElement | null, { x, y }: { x: number; y: number }) {
+  if (!el) return
+  // Flip to the left of the cursor near the right edge so it never clips.
+  const flip = x > window.innerWidth - 240
+  el.style.left = `${x}px`
+  el.style.top = `${y}px`
+  el.style.transform = flip ? 'translate(calc(-100% - 14px), -50%)' : 'translate(14px, -50%)'
 }

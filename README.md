@@ -54,7 +54,9 @@ cristae; lysosomes; peroxisomes; microtubules; cortical actin; centrosome.
   itself is not clickable: a ray through a cell crosses every membrane between the camera and
   its target, so a click could not say which of the nested structures was meant.
 - **Guided tours** fly the camera through a process step by step; arrow keys step,
-  space pauses, `Esc` backs out.
+  space pauses, `Esc` backs out. Grabbing the view mid-flight takes the camera back.
+- **Links are shareable.** The address bar follows the view — `#/mitochondrion` opens on a
+  structure, `#/tour/centralDogma/3` on the third step of a tour.
 - **Process speed** freezes or accelerates the biology without freezing the camera.
 - **Graphics: fast** drops the bloom pass on weaker hardware.
 
@@ -68,10 +70,11 @@ src/
   scene/organelles/   one component per structure
   scene/mechanisms/   one component per animated process
   state/store.ts      selection, tours, camera goals
+  state/url.ts        the address bar ↔ store sync behind shareable links
   ui/                 overlay panels
 ```
 
-Four things are worth knowing before editing:
+Five things are worth knowing before editing:
 
 - **The layout is seeded.** `data/layout.ts` generates positions deterministically
   so tours can fly to hard-coded coordinates. Changing a seed moves everything.
@@ -88,6 +91,11 @@ Four things are worth knowing before editing:
   `pickWhenVisible` and `instanceSphereRaycast`. Three's raycaster ignores `visible`, so
   anything that hides itself with that flag needs `pickWhenVisible` or it will go on
   naming itself while invisible.
+- **The view is framed off-centre on purpose.** `ui/useInsets.ts` measures how much of
+  each edge the panels cover, and `CameraRig` shifts the projection centre with
+  `setViewOffset` so the orbit target sits in the middle of what is left uncovered. Anything
+  that projects scene positions to the screen gets this for free from the projection
+  matrix; anything that assumes the target is at the middle of the canvas does not.
 
 ## Looking at changes
 

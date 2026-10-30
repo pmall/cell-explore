@@ -8,6 +8,9 @@ import {
 
 export type Quality = 'low' | 'high'
 
+/** Pixels along each edge of the viewport that overlay panels cover. */
+export type Insets = { left: number; right: number; top: number; bottom: number }
+
 type CameraGoal = {
   target: THREE.Vector3
   distance: number
@@ -32,6 +35,12 @@ type State = {
   speed: number
   cameraGoal: CameraGoal
   intro: boolean
+  /**
+   * Written by the overlay, read by the camera rig, which frames its target in
+   * the middle of what the panels leave uncovered rather than the middle of the
+   * window. Nothing renders from it, so nothing subscribes to it.
+   */
+  insets: Insets
 
   select: (id: StructureId | null) => void
   hover: (id: LabelId | null) => void
@@ -48,6 +57,7 @@ type State = {
   setQuality: (q: Quality) => void
   setSpeed: (s: number) => void
   dismissIntro: () => void
+  setInsets: (insets: Insets) => void
 }
 
 const initialGoal: CameraGoal = {
@@ -68,6 +78,7 @@ export const useStore = create<State>((set, get) => ({
   speed: 1,
   cameraGoal: initialGoal,
   intro: true,
+  insets: { left: 0, right: 0, top: 0, bottom: 0 },
 
   select: (id) => {
     if (id === null) {
@@ -151,6 +162,13 @@ export const useStore = create<State>((set, get) => ({
   setQuality: (quality) => set({ quality }),
   setSpeed: (speed) => set({ speed }),
   dismissIntro: () => set({ intro: false }),
+  setInsets: (insets) => {
+    const prev = get().insets
+    if (
+      prev.left !== insets.left || prev.right !== insets.right ||
+      prev.top !== insets.top || prev.bottom !== insets.bottom
+    ) set({ insets })
+  },
 }))
 
 /**

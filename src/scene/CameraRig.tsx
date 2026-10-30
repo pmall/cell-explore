@@ -11,6 +11,13 @@ const IDLE_BEFORE_DRIFT = 6
 
 const easeInOutCubic = (t: number) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2)
 
+/** The idle drift is decoration; a viewer who asked for less motion gets none. */
+const reducedMotion =
+  typeof window !== 'undefined' ? window.matchMedia?.('(prefers-reduced-motion: reduce)') : undefined
+
+/** Below this share of the viewport left uncovered, framing gives up on that axis. */
+const MIN_FREE = 0.35
+
 export function CameraRig() {
   const controlsRef = useRef<OrbitControlsImpl>(null)
   const camera = useThree((s) => s.camera)
@@ -29,6 +36,8 @@ export function CameraRig() {
   })
   const lastNonce = useRef(-1)
   const idleFor = useRef(0)
+  // Screen-space shift of the image centre, eased towards the panel insets.
+  const shift = useRef({ x: 0, y: 0, appliedX: 0, appliedY: 0, w: 0, h: 0 })
 
   useEffect(() => {
     const bump = () => {
@@ -42,12 +51,13 @@ export function CameraRig() {
     }
   }, [])
 
-  useFrame((_, rawDelta) => {
+  useFrame((state, rawDelta) => {
     const delta = Math.min(rawDelta, 1 / 20)
     const controls = controlsRef.current
     if (!controls) return
 
     tickTour(delta)
+    frameInsets(state.camera as THREE.PerspectiveCamera, state.size, delta)
 
     // A new camera goal arrived — plot a flight from wherever we are now.
     if (goal.nonce !== lastNonce.current) {
@@ -92,9 +102,41 @@ export function CameraRig() {
 
     // Idle drift: a very slow orbit so the scene never feels like a still image.
     idleFor.current += delta
-    controls.autoRotate = idleFor.current > IDLE_BEFORE_DRIFT
+    controls.autoRotate = idleFor.current > IDLE_BEFORE_DRIFT && !reducedMotion?.matches
     controls.update()
   })
+
+  /**
+   * Centres the view on the part of the window the panels leave uncovered, by
+   * moving the projection centre with setViewOffset rather than moving the
+   * camera. The orbit target stays where the rig put it and lands in the middle
+   * of the free area: beside the rail on a desktop, below the info sheet on a
+   * phone, above the tour player in both. Picking stays correct for free, since
+   * the raycaster reads the same projection matrix.
+   */
+  function frameInsets(cam: THREE.PerspectiveCamera, size: { width: number; height: number }, delta: number) {
+    const { width: w, height: h } = size
+    const { left, right, top, bottom } = useStore.getState().insets
+    const goalX = w - left - right > w * MIN_FREE ? (left - right) / 2 : 0
+    const goalY = h - top - bottom > h * MIN_FREE ? (top - bottom) / 2 : 0
+
+    const s = shift.current
+    const k = 1 - Math.exp(-delta * 4)
+    s.x += (goalX - s.x) * k
+    s.y += (goalY - s.y) * k
+    if (Math.abs(goalX - s.x) < 0.2) s.x = goalX
+    if (Math.abs(goalY - s.y) < 0.2) s.y = goalY
+
+    if (s.x === s.appliedX && s.y === s.appliedY && s.w === w && s.h === h) return
+    s.appliedX = s.x
+    s.appliedY = s.y
+    s.w = w
+    s.h = h
+    if (s.x === 0 && s.y === 0) cam.clearViewOffset()
+    // Positive offsets slide the window right and down, which moves the image
+    // the other way, so the shift goes in negated.
+    else cam.setViewOffset(w, h, -s.x, -s.y, w, h)
+  }
 
   return (
     <OrbitControls
@@ -108,6 +150,13 @@ export function CameraRig() {
       autoRotateSpeed={0.22}
       minDistance={0.8}
       maxDistance={70}
+      // Grabbing the view mid-flight hands it over. Without this the flight
+      // kept writing the camera every frame and the drag was simply ignored
+      // until it landed.
+      onStart={() => {
+        flight.current.active = false
+        idleFor.current = 0
+      }}
     />
   )
 }

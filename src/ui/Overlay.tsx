@@ -1,10 +1,11 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { STRUCTURES, STRUCTURE_BY_ID, TOURS, TOUR_BY_ID } from '../data/content'
 import { useStore } from '../state/store'
 import { Intro } from './Intro'
 import { InfoPanel } from './InfoPanel'
 import { TourPlayer } from './TourPlayer'
 import { HoverTag } from './HoverTag'
+import { useInsets } from './useInsets'
 
 type Tab = 'tours' | 'index'
 
@@ -22,6 +23,22 @@ export function Overlay() {
   const nextStep = useStore((s) => s.nextStep)
   const prevStep = useStore((s) => s.prevStep)
   const setPlaying = useStore((s) => s.setPlaying)
+
+  const overlayRef = useRef<HTMLDivElement>(null)
+  // Re-collect the panels whenever one can appear or disappear. The info panel
+  // is keyed by structure, so a new selection is a new element to observe.
+  useInsets(overlayRef, [selected, tourId, menuOpen])
+
+  // The sheet only exists at phone width. Close it when the viewport grows past
+  // that, or the flag lingers unseen and the next phone-sized view opens on it.
+  useEffect(() => {
+    const phone = window.matchMedia('(max-width: 620px)')
+    const onChange = () => {
+      if (!phone.matches) setMenuOpen(false)
+    }
+    phone.addEventListener('change', onChange)
+    return () => phone.removeEventListener('change', onChange)
+  }, [])
 
   // Keyboard: the whole thing should be usable without touching the mouse.
   useEffect(() => {
@@ -50,7 +67,7 @@ export function Overlay() {
 
   return (
     <>
-      <div className="overlay">
+      <div className="overlay" ref={overlayRef}>
         <header className="panel masthead">
           <div>
             <h1>Inside a Cell</h1>
@@ -62,7 +79,7 @@ export function Overlay() {
             aria-controls="rail"
             onClick={() => setMenuOpen((v) => !v)}
           >
-            {menuOpen ? 'Close' : 'Tours & index'}
+            {menuOpen ? 'Close' : 'Menu'}
           </button>
         </header>
 
@@ -133,7 +150,7 @@ export function Overlay() {
         {selected && <InfoPanel structure={STRUCTURE_BY_ID[selected]} />}
         {tourId && TOUR_BY_ID[tourId] && <TourPlayer tour={TOUR_BY_ID[tourId]} />}
 
-        <Controls />
+        <Controls open={menuOpen} />
 
         <div className="hint">
           drag to orbit · scroll to zoom · hover to name
@@ -150,7 +167,8 @@ export function Overlay() {
   )
 }
 
-function Controls() {
+/** `open` only matters on a phone, where the controls travel with the menu sheet. */
+function Controls({ open }: { open: boolean }) {
   const showLabels = useStore((s) => s.showLabels)
   const setShowLabels = useStore((s) => s.setShowLabels)
   const speed = useStore((s) => s.speed)
@@ -159,7 +177,7 @@ function Controls() {
   const setQuality = useStore((s) => s.setQuality)
 
   return (
-    <div className="panel controls">
+    <div className="panel controls" data-open={open}>
       <div className="control-row">
         <label htmlFor="speed">Process speed</label>
         <div className="seg">
